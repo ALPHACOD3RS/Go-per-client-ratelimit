@@ -45,13 +45,11 @@ func PerClientRateLimiter(next func(writer http.ResponseWriter, r *http.Request)
 
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Extract the IP address from the request.
 		ip, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		// Lock the mutex to protect this section from race conditions.
 		mu.Lock()
 		if _, found := clients[ip]; !found {
 			clients[ip] = &client{limiter: rate.NewLimiter(2, 4)}
@@ -62,7 +60,7 @@ func PerClientRateLimiter(next func(writer http.ResponseWriter, r *http.Request)
 
 			message := Message{
 				Status: "Request Failed",
-				Body:   "The API is at capacity, try again later.",
+				Body:   "The API is at overloaded, please try again later.",
 			}
 
 			w.WriteHeader(http.StatusTooManyRequests)
@@ -93,9 +91,9 @@ func endpointHandler(writer http.ResponseWriter, request *http.Request) {
 
 func main() {
 	http.Handle("/test", PerClientRateLimiter(endpointHandler))
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8000", nil)
 	if err != nil {
-		log.Println("There was an error listening on port :8080", err)
+		log.Println("There was an error listening on port :8000", err)
 	}
 }
 
